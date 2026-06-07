@@ -48,60 +48,147 @@ Three layers, never crossed:
                    report_agent  →  reports/case_*.md
 ```
 
-The orchestrator stays under 400 LOC by design — it dispatches, validates, and routes. All forensic logic lives in the per-domain agents. See [`SKILLS.md`](./SKILLS.md) for the full rules of the road.
+The orchestrator dispatches, validates, and routes. All forensic logic lives in the per-domain agents. 
 
 ---
 
 ## Installation
 
-FindEvil is designed to run end-to-end on a stock **SANS SIFT Workstation** VM (Ubuntu 22.04, x86-64). SIFT ships with Volatility 3, EZ Tools, YARA, The Sleuth Kit, EWF tools, Plaso, and the .NET 6 runtime pre-installed at the paths FindEvil expects. On top of SIFT you install **Chisel**, this repo, the Python dependencies, and the YARA signature-base.
+FindEvil is designed to run end-to-end on a stock **SANS SIFT Workstation** VM (Ubuntu 22.04, x86-64). SIFT ships with Volatility 3, EZ Tools, YARA, The Sleuth Kit, EWF tools, Plaso, and the .NET 6 runtime pre-installed at the paths FindEvil expects. On top of SIFT you install Cognee, this repo, the Python dependencies, and the YARA signature-base.
 
 If you already have a working SIFT VM, skip to step 2.
 
 ### 1. Get SIFT Workstation
 
-1. Request the SIFT VM download from <https://www.sans.org/tools/sift-workstation/> (free, requires a SANS account).
+1. Request the SIFT VM download from <https://www.sans.org/tools/sift-workstation/> 
 2. Import the supplied OVA into VMware Workstation/Fusion or VirtualBox. Recommended VM specs: **8 GB RAM, 4 CPU, 100+ GB disk** (E01 images are large).
 3. Boot the VM. Default credentials: `sansforensics` / `forensics`. Open a terminal — your home is `/home/sansforensics`.
-4. Verify the SIFT-bundled tools FindEvil depends on are present:
 
+If any of these are missing, follow the [SIFT install guide](https://github.com/teamdfir/sift) before continuing. 
+
+### 2. Clone dfirskills 
 ```bash
-python3 /opt/volatility3-2.20.0/vol.py --help | head -1     # Volatility 3
-/usr/local/bin/yara --version                                # YARA 4.x
-fls -V && ewfmount -h | head -1                              # Sleuth Kit + EWF
-dotnet --info | head -3                                      # .NET 6 runtime
-log2timeline.py --version                                    # Plaso
-ls /opt/zimmermantools/                                      # EZ Tools (RECmd, EvtxECmd, MFTECmd, …)
+git clone https://github.com/patflanigan/dfirskills.git
+cd dfirskills
+
+dfirskills includes a forked custom compiled version of Chisel — Rust-powered MCP server providing path-confined evidence reads.
+ -> reference https://github.com/ckanthony/Chisel
+/Chisel/chisel-core/src/ops/shell.rs creates command restrictions to the following tools
+
+const WHITELIST: &[&str] = &[
+    "grep", "sed", "awk", "find", "cat", "head", "tail", "wc", "sort", "uniq", "cut", "tr", "diff",
+    "file", "stat", "ls", "du",
+    // ← Your DFIR tools go here
+    "log2timeline.py",
+	"psort.py",
+	"pinfo.py",
+	"image_export.py",
+	"mactime",
+	"fls",
+	"ils",
+	"icat",
+	"istat",
+	"ifind",
+	"ffind",
+	"fsstat",
+	"blkcat",
+	"blkls",
+	"blkstat",
+	"blkcalc",
+	"mmls",
+	"mmstat",
+	"mmcat",
+	"tsk_recover",
+	"sorter",
+	"sigfind",
+	"jls",
+	"jcat",
+	"hfind",
+	"ewfmount",
+	"vshadowmount",
+	"bdemount",
+	"xmount",
+	"imagemounter",
+	"mount_ewf.py",
+	"qemu-nbd",
+	"partprobe",
+	"mount",
+	"umount",
+	"losetup",
+	"volatility",
+	"vol.py",
+	"vol",
+	"rekall",
+	"dotnet",
+	"mftecmd",
+	"evtxecmd",
+	"recmd",
+	"pecmd",
+	"amcacheparser",
+	"appcompatcacheparser",
+	"jlecmd",
+	"lecmd",
+	"sqlecmd",
+	"srumecmd",
+	"vtecmd",
+	"rbcmd",
+	"bstrings",
+	"rip.pl",
+	"regripper",
+	"bulk_extractor",
+	"foremost",
+	"photorec",
+	"scalpel",
+	"strings",
+	"floss",
+	"tshark",
+	"tcpdump",
+	"ngrep",
+	"tcpxtract",
+	"exiftool",
+	"yara",
+	"clamscan",
+	"hayabusa",
+	"md5sum",
+	"sha1sum",
+	"sha256sum",
+	"sha512sum",
+	"ssdeep",
+	"md5deep",
+	"echo",
+	"printf",
+	"ls",
+	"cat",
+	"grep",
+	"rg",
+	"find",
+	"file",
+	"stat",
+	"hexdump",
+	"xxd",
+	"head",
+	"tail",
+	"less",
+	"awk",
+	"sed",
+	"sort",
+	"uniq",
+	"wc",
+        "yara",
+        "yarac",
+        "fusermount",
+];
+
 ```
 
-If any of these are missing, follow the [SIFT install guide](https://github.com/teamdfir/sift) before continuing. The exact paths FindEvil expects are listed in [Prerequisites reference](#prerequisites-reference) below.
-
-### 2. Clone FindEvil and install Chisel
-
-```bash
-cd ~
-git clone https://github.com/<you>/findevil.git
-cd findevil
-
-# Chisel — Rust-powered MCP server providing path-confined evidence reads.
-# Grab the latest Linux x86_64 binary from the Chisel releases page:
-#   https://github.com/ckanthony/Chisel/releases/latest
-# Drop the binary into this repo's root and make it executable:
-curl -L -o chisel \
-  "$(curl -s https://api.github.com/repos/ckanthony/Chisel/releases/latest \
-     | grep browser_download_url \
-     | grep -E 'linux.*x86_64|linux-amd64' \
-     | head -1 | cut -d\" -f4)"
-chmod +x chisel
-./chisel --help | head -3   # sanity check
-```
-
-To build Chisel from source instead: `git clone https://github.com/ckanthony/Chisel.git && cd Chisel && cargo build --release && cp target/release/chisel /path/to/findevil/`.
+To build Chisel from source instead: `git clone https://github.com/ckanthony/Chisel.git 
+add the above allow lists
+&& cd Chisel && cargo build --release && cp target/release/chisel /path/to/dfirskills/`.
 
 ### 3. Python environment + dependencies
 
 ```bash
-cd ~/findevil
+cd ~/dfirskills
 python3 -m venv .venv
 source .venv/bin/activate
 pip install -r requirements.txt
@@ -114,7 +201,7 @@ This installs **[Cognee](https://github.com/topoteretes/cognee)** — the typed 
 The YARA rule base is vendored separately (Detection Rule License 1.1 — kept out of this repo).
 
 ```bash
-cd ~/findevil
+cd ~/dfirskills
 git clone https://github.com/Neo23x0/signature-base rules/signature-base
 yarac rules/signature-base/yara/*.yar rules/signature-base.compiled
 ```
@@ -122,7 +209,7 @@ yarac rules/signature-base/yara/*.yar rules/signature-base.compiled
 ### 5. Configure `.env`
 
 ```bash
-cd ~/findevil
+cd ~/dfirskills
 cp .env.example .env
 
 # Generate and persist a fresh Chisel bearer-token secret
@@ -139,22 +226,21 @@ If `CHISEL_SECRET` is unset when the orchestrator starts, agents fail fast with 
 `.env.example` already includes the Cognee defaults that this pipeline depends on — leave them in place unless you know you need otherwise:
 
 - `COGNEE_VECTOR_STORE=local` / `COGNEE_GRAPH_STORE=local` — pin Cognee to on-disk storage (no cloud).
-- `ENABLE_BACKEND_ACCESS_CONTROL=false` — Cognee 1.0 defaults multi-user access control to on, which hides the orchestrator's ingested data from the unauthenticated web UI. Single-analyst workstation — keep this off so you can browse the case graph after a run.
 - `SYSTEM_ROOT_DIRECTORY` / `DATA_ROOT_DIRECTORY` are **intentionally not in `.env`** — `orchestrator/main.py` sets them per-case at startup (one isolated graph + vector store per CASE_ID under `evidence/audit/`).
 
 ### 6. Smoke check
 
 ```bash
 # Terminal A — start Chisel, confined to the evidence root
-cd ~/findevil
+cd ~/dfirskills
 ./chisel --root "$PWD/evidence" --secret "$(grep ^CHISEL_SECRET .env | cut -d= -f2)"
 ```
 
-**Watch the `--root` carefully** — it must resolve to `~/findevil/evidence`, not a doubled path like `~/findevil/findevil/evidence`. A wrong `--root` causes every forensic-tool call to fail with `security error: resolved path … is outside configured root`.
+**Watch the `--root` carefully** — it must resolve to `~/dfirskills/evidence. A wrong `--root` causes every forensic-tool call to fail with `security error: resolved path … is outside configured root`.
 
 ```bash
 # Terminal B — sanity-import the orchestrator
-cd ~/findevil
+cd ~/dfirskills
 source .venv/bin/activate
 python -c "import orchestrator.main; print('OK')"
 ```
@@ -163,24 +249,9 @@ You should see the orchestrator import without error and print a `CASE_ID=…` l
 
 ---
 
-## Prerequisites reference
-
-Tool paths FindEvil expects. All defaults match a stock SIFT Workstation install:
-
-| Tool | Where FindEvil expects it | Notes |
-|---|---|---|
-| Python | 3.10+ | |
-| Volatility 3 | `python3 /opt/volatility3-2.20.0/vol.py` | Memory analysis. NOT `/usr/local/bin/vol.py` (that's Vol2). |
-| EWF tools | `ewfmount`, `ewfinfo` (system PATH) | Mount `.E01` images. |
-| YARA | `/usr/local/bin/yara`, `yarac` (4.x) | Memory + file scanning. |
-| The Sleuth Kit | `fls`, `icat`, `mmls`, `fsstat` (system PATH) | Disk image traversal. |
-| EZ Tools (.NET 6 runtime) | `dotnet /opt/zimmermantools/<Tool>.dll` | RECmd, EvtxECmd, MFTECmd, RBCmd, AppCompatCacheParser, AmcacheParser. |
-| Plaso | `log2timeline.py`, `psort.py` | Timeline cross-checks. |
-| Chisel MCP | `./chisel` (this repo root), HTTP at `127.0.0.1:3000` | Path-confined evidence reads. |
-
 ### Forensic-tool execution audit log
 
-Every forensic-tool invocation (`vol`, `dotnet EvtxECmd.dll`, `log2timeline.py`, `psort.py`, `ewfmount`, `fls`, `icat`, `mmls`, `fsstat`, `dotnet RECmd.dll`, `dotnet MFTECmd.dll`, `dotnet RBCmd.dll`, `dotnet AppCompatCacheParser.dll`, `dotnet AmcacheParser.dll`) is routed through Chisel's `shell_exec` allowlist and logged to `evidence/audit/chisel_exec_<YYYYMMDD>.jsonl` (one record per invocation: timestamp, agent, tool, args, exit_code, stdout_bytes, stderr_summary, elapsed_ms).
+Every forensic-tool invocation is routed through Chisel's `shell_exec` allowlist and logged to `evidence/audit/chisel_exec_<YYYYMMDD>.jsonl` (one record per invocation: timestamp, agent, tool, args, exit_code, stdout_bytes, stderr_summary, elapsed_ms).
 
 The audit log answers "what did this case actually run?" with one `cat`. The Chisel server's command allowlist is the source of truth for which tools agents are permitted to invoke (see `chisel-core/src/ops/shell.rs:WHITELIST`). Adding a new forensic tool requires both adding it to the allowlist AND adding the agent code that invokes it.
 
@@ -190,19 +261,19 @@ The audit log answers "what did this case actually run?" with one `cat`. The Chi
 
 ```bash
 # 1. Drop evidence into evidence/new/. The dispatcher routes by filename:
-cp /path/to/memdump.raw          evidence/new/
-cp /path/to/disk.E01             evidence/new/
-cp /path/to/SYSTEM               evidence/new/
-cp /path/to/Security.evtx        evidence/new/
-cp /path/to/PREFETCH.pf          evidence/new/
-cp /path/to/'$MFT'               evidence/new/__mft__\$MFT
-cp /path/to/'$J'                 evidence/new/__usnjrnl__\$J
+memdump.raw   ->       evidence/new/
+disk.E01      ->       evidence/new/
+SYSTEM        ->       evidence/new/
+Security.evtx ->       evidence/new/
+PREFETCH.pf   ->       evidence/new/
+'$MFT'        ->       evidence/new/__mft__\$MFT
+'$J'          ->       evidence/new/__usnjrnl__\$J
 
 # 2. Run the orchestrator (Terminal B; Chisel must be running in Terminal A)
-python -m orchestrator.main
+python -u -m orchestrator.main
 
-# 3. Read the report
-ls -t reports/case_*.md | head -1
+# 3. Once the orchestration and agents are finished. Read the report under 
+~/dfirskills2/reports
 ```
 
 ### Orchestrator CLI flags
@@ -212,6 +283,7 @@ ls -t reports/case_*.md | head -1
 | *(none)* | One-shot: process all pending evidence, settle (30 s of inactivity), generate report, exit. |
 | `--watch` | Watch forever (legacy; no settle-detection, no report). |
 | `--quiet-period N` | Seconds of inactivity required to declare the pipeline settled (default 30). |
+| `--no-analyst` | Skip the LLM-driven forensic analyst deep-dive pass. Default: analyst runs after plaso. |
 
 ### Filename routing
 
@@ -229,32 +301,18 @@ The dispatcher in `orchestrator/main.py:124-220` routes by filename heuristic:
 
 ---
 
-## Browse the case graph (Cognee web UI)
+## Browse the case graph (Cognee html report)
 
-Every run produces two queryable artifacts: the Markdown report under `reports/` and a **typed knowledge graph** under `evidence/audit/<CASE_ID>/cognee_{system,data}` (one isolated graph per case, Kuzu-backed). The report is the executive view; the graph is the analyst's view — every node carries `evidence_refs` back to the raw artifact it was extracted from.
+Every run produces html graph under `reports/` and a **typed knowledge graph** under `evidence/audit/<CASE_ID>/cognee_{system,data}` (one isolated graph per case, Kuzu-backed). The report is the executive view; the graph is the analyst's view — every node carries `evidence_refs` back to the raw artifact it was extracted from.
 
-Open an archived case in the Cognee web UI:
-
-```bash
-# Stop Chisel first — Cognee's frontend also wants port 3000
-# (in the Chisel terminal: Ctrl-C)
-
-cd ~/findevil
-source .venv/bin/activate
-scripts/open_case_in_cognee.sh <CASE_ID>      # e.g. 20260606_191903
 ```
-
-The script exports the per-case `SYSTEM_ROOT_DIRECTORY` / `DATA_ROOT_DIRECTORY`, launches Cognee's backend on `http://localhost:8000`, frontend on `http://localhost:3000`, and opens your browser. Ctrl-C tears down both. Running it with no arguments lists available CASE_IDs.
-
 The graph is typed via `cognee_schema/schema.py` — Process, RegistryKey, Event, ProcessExecution, File, Service nodes with provenance-mandatory `evidence_refs`, connected by typed edges (`EXECUTED`, `WROTE_REGISTRY`, `LOADED_DLL`, etc., each carrying `confidence` and `derived_from`). The exact shape is the contract: agents emit claims, the orchestrator deterministically extracts entities, no LLM in the structured-data path.
-
 ---
 
 ## Project layout
-
 ```
 .
-├── orchestrator/           # Thin dispatcher + validator + extractor (<400 LOC)
+├── orchestrator/           # Thin dispatcher + validator + extractor  
 │   ├── main.py             # CLI entrypoint
 │   ├── watcher.py          # Watches evidence/new/ and claims/todo/
 │   ├── validator.py        # Self-correction loop (evidence ref + property checks)
@@ -272,8 +330,8 @@ The graph is typed via `cognee_schema/schema.py` — Process, RegistryKey, Event
 ├── cognee_schema/
 │   └── schema.py           # Pydantic typed nodes + edges; provenance-required
 ├── rules/                  # YARA rules (clone signature-base separately — see Setup)
-├── evidence/               # Per-case input (gitignored)
-├── reports/                # Generated case reports (gitignored)
+├── evidence/               # Per-case evidence
+├── reports/                # Generated case reports
 └── SKILLS.md               # Per-domain forensic skill loaded by the agents at runtime
 ```
 
@@ -285,16 +343,12 @@ Each run produces two artifacts:
 
 **1. Markdown case report** — `reports/case_YYYYMMDD_HHMMSS.md`
 
-- **CISO summary** (one-paragraph plain-English briefing + risk/confidence/next-steps for non-technical leadership; LLM-polished if `ANTHROPIC_API_KEY` is set, deterministic prose otherwise)
+- **CISO summary** (one-paragraph plain-English briefing + risk/confidence/next-steps for non-technical leadership)
 - Executive summary (Tier-A correlations: cross-domain, ≥0.95 confidence)
 - Domain sections (Tier-B: high-confidence single-domain findings)
 - Appendix (Tier-C: recurring / lower-confidence)
 - MITRE ATT&CK technique mapping
 - Graph visualization (`reports/case_graph_*.html`) — interactive, filterable, self-contained HTML
-
-**2. Cognee knowledge graph** — `evidence/audit/<CASE_ID>/cognee_{system,data}/`
-
-The full typed graph: every Process / RegistryKey / Event / ProcessExecution / File / Service node with provenance back to the raw artifact, plus typed edges with `confidence` + `derived_from`. Browse it in the Cognee web UI via [`scripts/open_case_in_cognee.sh`](#browse-the-case-graph-cognee-web-ui), or query it directly with Cognee's Python API.
 
 ---
 
@@ -305,22 +359,12 @@ Four guarantees the pipeline enforces (via Chisel, the orchestrator, and the val
 - **Three-layer separation.** Agents never write to Cognee — they only emit Markdown claims. Orchestrator never runs forensic logic — it only dispatches, validates, and extracts.
 - **Entity extraction is deterministic Python only.** No LLM in the structured-data path.
 - **Every claim must self-validate** — every cited `evidence_ref` must exist on disk; every asserted entity property must match the source.
-- **Orchestrator stays thin.** Target <400 LOC across `orchestrator/`.
 
 The agents themselves load [`SKILLS.md`](./SKILLS.md) — a per-domain forensic playbook covering the tools each agent owns, the standard triage sweep, "when you see X, pivot to Y" signals, and the cross-source corroboration patterns that drive Tier A confidence. That's where the forensic *intelligence* of this pipeline lives.
 
 ---
 
-## Credits
 
-- **SANS AI Hackathon** — challenge framing + sample case data
-- [`Neo23x0/signature-base`](https://github.com/Neo23x0/signature-base) — YARA rule base (Detection Rule License 1.1)
-- [`Cognee`](https://github.com/topoteretes/cognee) — typed knowledge-graph backend
-- [Volatility Foundation](https://www.volatilityfoundation.org/) — memory analysis
-- [Eric Zimmerman tools](https://ericzimmerman.github.io/) — registry / EVTX / MFT parsers
-
----
-
-## License
+## MIT License
 
 Released under the MIT License. See [`LICENSE`](./LICENSE).
