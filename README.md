@@ -63,6 +63,8 @@ If you already have a working SIFT VM, skip to step 2.
 1. Request the SIFT VM download from <https://www.sans.org/tools/sift-workstation/> 
 2. Import the supplied OVA into VMware Workstation/Fusion or VirtualBox. Recommended VM specs: **8 GB RAM, 4 CPU, 100+ GB disk** (E01 images are large).
 3. Boot the VM. Default credentials: `sansforensics` / `forensics`. Open a terminal — your home is `/home/sansforensics`.
+4. Ensure protocol SIFT is installed
+   `curl -fsSL https://raw.githubusercontent.com/teamdfir/protocol-sift/main/install.sh | bash`
 
 If any of these are missing, follow the [SIFT install guide](https://github.com/teamdfir/sift) before continuing. 
 
@@ -189,9 +191,10 @@ add the above allow lists
 
 ```bash
 cd ~/dfirskills
+sudo apt install python3.12-venv
 python3 -m venv .venv
 source .venv/bin/activate
-pip install -r requirements.txt
+pip install -r requirements.txt --break-system-packages
 ```
 
 This installs **[Cognee](https://github.com/topoteretes/cognee)** — the typed knowledge-graph backend the orchestrator extracts entities into — plus `python-dotenv`, `PyYAML`, `requests`, and the optional `anthropic` SDK (only used if you set `ANTHROPIC_API_KEY` later). Cognee runs entirely on-disk under `evidence/audit/<CASE_ID>/cognee_{system,data}` — no external service or API key required.
@@ -202,6 +205,7 @@ The YARA rule base is vendored separately (Detection Rule License 1.1 — kept o
 
 ```bash
 cd ~/dfirskills
+sudo apt install yara
 git clone https://github.com/Neo23x0/signature-base rules/signature-base
 yarac rules/signature-base/yara/*.yar rules/signature-base.compiled
 ```
