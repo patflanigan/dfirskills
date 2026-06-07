@@ -41,7 +41,7 @@ os.environ.setdefault("ENABLE_BACKEND_ACCESS_CONTROL", "false")
 
 CASE_ID = os.environ.get("FINDEVIL_CASE_ID") or datetime.now(UTC).strftime("%Y%m%d_%H%M%S")
 os.environ["FINDEVIL_CASE_ID"] = CASE_ID
-_EVIDENCE_ROOT_EARLY = Path(os.getenv("EVIDENCE_ROOT", "/evidence"))
+_EVIDENCE_ROOT_EARLY = Path(os.getenv("EVIDENCE_ROOT", "/evidence")).resolve()
 _CASE_AUDIT_DIR = _EVIDENCE_ROOT_EARLY / "audit" / CASE_ID
 os.environ["SYSTEM_ROOT_DIRECTORY"] = str(_CASE_AUDIT_DIR / "cognee_system")
 os.environ["DATA_ROOT_DIRECTORY"] = str(_CASE_AUDIT_DIR / "cognee_data")
@@ -73,7 +73,7 @@ from agents.mft_agent.agent import run_mft_analysis, detect_mft
 # ─────────────────────────────────────────────────────────────
 # CONFIG (edit in .env or here)
 # ─────────────────────────────────────────────────────────────
-EVIDENCE_ROOT = Path(os.getenv("EVIDENCE_ROOT", "/evidence"))
+EVIDENCE_ROOT = Path(os.getenv("EVIDENCE_ROOT", "/evidence")).resolve()
 CLAIMS_TODO = EVIDENCE_ROOT / "claims/todo"
 CLAIMS_DOING = EVIDENCE_ROOT / "claims/doing"
 CLAIMS_DONE = EVIDENCE_ROOT / "claims/done"
