@@ -12,7 +12,7 @@ from pathlib import Path
 from typing import Tuple
 import yaml
 
-EVIDENCE_ROOT = Path(os.environ.get("EVIDENCE_ROOT", "/home/sansforensics/dfirskills2/evidence"))
+EVIDENCE_ROOT = Path(os.environ.get("EVIDENCE_ROOT", "/evidence")).resolve()
 SKIP_SPOT_CHECK = os.environ.get("FINDEVIL_SKIP_SPOT_CHECK") == "1"
 
 # Multi-field spot-check coverage per node-type prefix. Every field in this list is
