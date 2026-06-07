@@ -1,0 +1,39 @@
+# Evidence and case data (large; never commit)
+/evidence/
+
+# Generated outputs
+/analysis/
+/reports/
+
+# Cognee local DB
+/.cognee_system/
+/.cognee_data/
+
+# Secrets and local config
+.env
+.env.local
+
+# YARA compiled rules (regenerate from sources via `yarac`)
+/rules/signature-base.compiled
+
+# Vendored third-party rule base — clone separately or add as submodule.
+# See README "Setup" section.
+/rules/signature-base/
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+
+# Editor / OS
+.DS_Store
+*.swp
+*.swo
+*~
+.idea/
+.vscode/
+
+# Claude scheduler local state
+/.claude/scheduled_tasks.lock
