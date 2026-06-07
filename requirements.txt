@@ -1,0 +1,10 @@
+# FindEvil minimal dependencies
+# Keep this list tiny — orchestrator must stay <400 LOC total
+cognee>=0.2.0
+python-dotenv
+PyYAML
+requests
+# Optional: powers the LLM-polished CISO summary at the top of each case report.
+# Without this (or without ANTHROPIC_API_KEY), the summary still renders with a
+# deterministic prose template — no crash.
+anthropic>=0.40.0
