@@ -1,4 +1,4 @@
-# FindEvil
+# dfirskills
 
 A multi-agent DFIR pipeline that ingests Windows memory dumps, disk images, registry hives, event logs, prefetch, and MFT/USN data; emits validated forensic claims; and builds a typed [Cognee](https://github.com/topoteretes/cognee) knowledge graph with full evidence provenance.
 
@@ -54,7 +54,7 @@ The orchestrator dispatches, validates, and routes. All forensic logic lives in 
 
 ## Installation
 
-FindEvil is designed to run end-to-end on a stock **SANS SIFT Workstation** VM (Ubuntu 22.04, x86-64). SIFT ships with Volatility 3, EZ Tools, YARA, The Sleuth Kit, EWF tools, Plaso, and the .NET 6 runtime pre-installed at the paths FindEvil expects. On top of SIFT you install Cognee, this repo, the Python dependencies, and the YARA signature-base.
+dfirskills is designed to run end-to-end on a stock **SANS SIFT Workstation** VM (Ubuntu 22.04, x86-64). SIFT ships with Volatility 3, EZ Tools, YARA, The Sleuth Kit, EWF tools, Plaso, and the .NET 6 runtime pre-installed at the paths dfirskills expects. On top of SIFT you install Cognee, this repo, the Python dependencies, and the YARA signature-base.
 
 If you already have a working SIFT VM, skip to step 2.
 
