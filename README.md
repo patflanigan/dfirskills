@@ -1,5 +1,33 @@
 # dfirskills
 
+**Autonomous multi-agent DFIR pipeline for the SANS FIND EVIL! AI Hackathon**
+
+A three-layer DFIR system that ingests Windows memory dumps, disk images (E01), registry hives, event logs, prefetch files, and MFT/USN data. Domain agents emit validated forensic **claims** (Markdown + YAML). A thin orchestrator performs deterministic extraction into a **typed Cognee knowledge graph** with full evidence provenance on every node and edge. Secure tool execution is enforced via a custom path-confined Chisel MCP server with comprehensive audit logging.
+
+Built for the **SANS FIND EVIL! / Protocol SIFT Contest**.
+
+Drop evidence files into evidence/new/ (memory dumps, .E01, hives, .evtx, .pf, $MFT, etc.). The pipeline processes autonomously, settles, and produces a report in reports/.
+See detailed installation and running instructions below.
+---
+
+## Key Features & Contest Alignment
+
+- **Architectural guardrails first** — Chisel provides path confinement + tool allowlisting. The validator enforces evidence integrity. No reliance on prompt engineering to prevent spoliation.
+- **Self-correction loop** — Claims are validated for real evidence references and property consistency before promotion. Rejected claims trigger re-processing.
+- **Typed provenance graph** — Every entity and relationship carries `evidence_refs`, `confidence`, and `derived_from`. Built with Pydantic + Cognee (local Kuzu backend).
+- **Domain intelligence via SKILLS.md** — Agents load rich forensic playbooks (triage order, go-deeper signals, cross-source corroboration patterns, confidence rubric).
+- **Full audit trail** — Every tool invocation is logged with timestamps, agent, args, exit code, and output summary.
+- **Practitioner output** — Tiered Markdown report (CISO summary → Executive Tier A → Domain Tier B → Appendix) + interactive HTML graph + MITRE ATT&CK mapping.
+- **SIFT-native** — Runs on stock SANS SIFT Workstation using real tools (Volatility 3, EvtxECmd, MFTECmd, RECmd, pyscca, YARA, The Sleuth Kit, etc.).
+
+Core rules enforced by the system:
+
+Agents only emit claims. They never touch Cognee.
+Extraction is deterministic Python (no LLM in the structured path).
+Every claim must self-validate against real evidence on disk.
+All tool execution goes through Chisel’s allowlist + audit log.
+---
+
 **An autonomous, evidence-integrity-first DFIR pipeline for the SANS Find Evil! hackathon.
 **
 ---
@@ -11,6 +39,15 @@ dfirskills ingests Windows memory dumps, disk images (E01), registry hives, even
 **Evidence access is kernel-confined, not prompt-confined.** All tool execution is routed through Chisel, a custom MCP server that confines reads to the evidence root at the OS level and gates every command against an allowlist. An agent physically cannot run a destructive command or read outside the case.
 
 **Every claim self-validates before it counts.** A claim's cited evidence must exist on disk, its asserted attributes must match the graph, and its body text must agree with its frontmatter — or it is rejected, never silently ingested.
+
+**Self-Correction & Validation**
+The validator.py implements a self-correction loop:
+
+Every claim’s evidence_refs are checked for existence on disk.
+Key properties are spot-checked against the source artifact.
+Invalid claims are moved to claims/rejected/ and can trigger re-processing or agent re-evaluation.
+
+This is a core architectural feature (not prompt-based) and will be demonstrated in the contest video.
 
 ## Architectural pattern
 **Custom MCP Server (Chisel) + deterministic multi-agent pipeline.** The security property is architectural: Chisel enforces a kernel-confined evidence root plus a command allowlist over an MCP shell_exec interface. 
