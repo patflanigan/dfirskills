@@ -183,7 +183,7 @@ If `CHISEL_SECRET` is unset when the orchestrator starts, agents fail fast with 
 ```bash
 # Terminal A — start Chisel, confined to the evidence root
 cd ~/dfirskills
-./chisel --root "$PWD/evidence" --secret "$(grep ^CHISEL_SECRET .env | cut -d= -f2)"
+./chisel --root "$PWD/" --secret "$(grep ^CHISEL_SECRET .env | cut -d= -f2)"
 ```
 
 **Watch the `--root` carefully** — it must resolve to `~/dfirskills/evidence. A wrong `--root` causes every forensic-tool call to fail with `security error: resolved path … is outside configured root`.
