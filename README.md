@@ -64,6 +64,9 @@ Three layers, never crossed:
 | **Claims** | Markdown files with YAML frontmatter | domain agents |
 | **Entities** | Cognee graph (typed nodes + edges, every one carrying `evidence_refs`) | orchestrator only — agents never touch Cognee |
 ```
+## Architecture
+
+```mermaid
 flowchart TD
     Evidence[evidence/new/<br/>Drop files here] --> Dispatcher[Orchestrator Dispatcher<br/>filename heuristic routing]
     
@@ -93,7 +96,6 @@ flowchart TD
     
     Correlation --> Report[report_agent]
     Report --> ReportOut[reports/case_*.md<br/>CISO summary + Tiered findings<br/>+ interactive HTML graph]
-```
 
 The orchestrator dispatches, validates, and routes. All forensic logic lives in the per-domain agents. 
 
