@@ -3,6 +3,7 @@
 cognee>=0.2.0
 fastembed
 python-dotenv
+claude-agent-sdk
 PyYAML
 requests
 # Optional: powers the LLM-polished CISO summary at the top of each case report.
