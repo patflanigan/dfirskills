@@ -272,6 +272,7 @@ Each run produces two artifacts:
 ---
 
 ## Custom Chisel 
+```bash
 dfirskills includes a forked custom compiled version of Chisel — Rust-powered MCP server providing path-confined evidence reads.
  -> reference https://github.com/ckanthony/Chisel
 /Chisel/chisel-core/src/ops/shell.rs creates command restrictions to the following tools
