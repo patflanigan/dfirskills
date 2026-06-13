@@ -1,12 +1,22 @@
 # dfirskills
 
-A multi-agent DFIR pipeline that ingests Windows memory dumps, disk images, registry hives, event logs, prefetch, and MFT/USN data; emits validated forensic claims; and builds a typed [Cognee](https://github.com/topoteretes/cognee) knowledge graph with full evidence provenance.
-
-Built for the **SANS AI Hackathon**.
-
+**An autonomous, evidence-integrity-first DFIR pipeline for the SANS Find Evil! hackathon.
+**
 ---
+dfirskills ingests Windows memory dumps, disk images (E01), registry hives, event logs, prefetch, and MFT/USN data; runs deterministic per-domain forensic agents; self-corrects every finding against the evidence and the case graph before it is allowed to stand; and emits a typed Cognee knowledge graph where every node traces back to the exact tool execution that produced it.
 
-## Architecture
+## What makes this different
+**No LLM in the structured-data path.** Forensic logic lives in deterministic Python agents. The graph is written only by a deterministic extractor. The one LLM component (the optional forensic analyst) is downstream of the deterministic baseline and is gated by the same validator everything else passes through — it cannot introduce a finding that contradicts the graph.
+
+**Evidence access is kernel-confined, not prompt-confined.** All tool execution is routed through Chisel, a custom MCP server that confines reads to the evidence root at the OS level and gates every command against an allowlist. An agent physically cannot run a destructive command or read outside the case.
+
+**Every claim self-validates before it counts.** A claim's cited evidence must exist on disk, its asserted attributes must match the graph, and its body text must agree with its frontmatter — or it is rejected, never silently ingested.
+
+## Architectural pattern
+**Custom MCP Server (Chisel) + deterministic multi-agent pipeline.** The security property is architectural: Chisel enforces a kernel-confined evidence root plus a command allowlist over an MCP shell_exec interface. 
+
+1. The forensic agents are deterministic Python — the LLM is not driving the shell.
+2. A single optional LLM agent (forensic analyst) runs last and is subordinate to the deterministic baseline. 
 
 Three layers, never crossed:
 
@@ -15,23 +25,23 @@ Three layers, never crossed:
 | **Evidence** | Local directory — immutable raw files | external (you drop files in) |
 | **Claims** | Markdown files with YAML frontmatter | domain agents |
 | **Entities** | Cognee graph (typed nodes + edges, every one carrying `evidence_refs`) | orchestrator only — agents never touch Cognee |
-
 ```
+  ┌─────────────────┐
+ evidence/new/   ────►    │   dispatcher    │   (orchestrator/main.py)
+ (you drop here)          └────────┬────────┘
+                                   │ filename heuristic
+                ┌──────────┬───────┼───────┬──────────┬──────────┐
+                ▼          ▼       ▼        ▼          ▼          ▼
+            memory_agent  disk  registry  evtx    prefetch   mft_agent
+                │          │      │         │        │           │
+                └──────────┴───── claims/todo/ ◄─────┴───────────┘
+                                   │
+                                   ▼
                           ┌─────────────────┐
- evidence/new/   ────►   │   dispatcher    │   (orchestrator/main.py)
- (you drop here)         └────────┬────────┘
-                                  │ filename heuristic
-                ┌──────────┬──────┼──────┬──────────┬──────────┐
-                ▼          ▼      ▼      ▼          ▼          ▼
-            memory_agent  disk  registry evtx   prefetch    mft_agent
-                │          │      │       │       │           │
-                └──────────┴───── claims/todo/ ◄──┴───────────┘
-                                  │
-                                  ▼
-                          ┌─────────────────┐
-                          │  validator      │  self-correction loop
-                          │  (verifies      │  (entity refs + property
-                          │   evidence_refs)│   spot-checks)
+                          │   validator     │   self-correction loop
+                          │  evidence refs  │   (rejects contradictions
+                          │  + graph spot-  │    & evidence-less claims)
+                          │  checks + body  │
                           └────────┬────────┘
                                    │
                           ┌────────┴────────┐
@@ -39,13 +49,17 @@ Three layers, never crossed:
                     claims/done/      claims/rejected/
                           │
                           ▼
-                  extractor → Cognee graph
+                   extractor ──► Cognee graph  (deterministic, no LLM)
                           │
                           ▼
-                  correlation_agent  (cross-domain pattern matching)
+                   correlation_agent  (cross-domain Tier A/B/C)
                           │
+       plaso super-timeline ──► (lateral-movement pass)
+                          │
+       forensic_analyst (optional LLM deep-dive) ──┐ emits more claims,
+                          │                        │ re-validated identically
                           ▼
-                   report_agent  →  reports/case_*.md
+                    report_agent  ──►  reports/case_*.md + case_graph_*.html
 ```
 
 The orchestrator dispatches, validates, and routes. All forensic logic lives in the per-domain agents. 
