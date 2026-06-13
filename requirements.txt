@@ -1,6 +1,7 @@
 # FindEvil minimal dependencies
 # Keep this list tiny — orchestrator must stay <400 LOC total
 cognee>=0.2.0
+fastembed
 python-dotenv
 PyYAML
 requests
