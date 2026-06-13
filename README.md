@@ -128,7 +128,9 @@ dfirskills is designed to run end-to-end on a stock **SANS SIFT Workstation** VM
 git clone https://github.com/patflanigan/dfirskills.git
 cd dfirskills
 
-
+pip install --user volatility3 --break-system-packages
+```
+I had issues with missing volatility3 for handling raw memory files. this needs to be reviewed. for now i have installed it
 
 ### 3. Python environment + dependencies
 
@@ -138,10 +140,8 @@ sudo apt install python3.12-venv
 python3 -m venv .venv
 source .venv/bin/activate
 pip install -r requirements.txt --break-system-packages
-
-pip install --user volatility3 --break-system-packages
 ```
-I had issues with missing volatility3 for handling raw memory files. this needs to be reviewed. for now i have installed it
+
 
 This installs **[Cognee](https://github.com/topoteretes/cognee)** — the typed knowledge-graph backend the orchestrator extracts entities into — plus `python-dotenv`, `PyYAML`, `requests`, and the optional `anthropic` SDK (only used if you set `ANTHROPIC_API_KEY` later). Cognee runs entirely on-disk under `evidence/audit/<CASE_ID>/cognee_{system,data}` — no external service or API key required.
 
