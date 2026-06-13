@@ -65,13 +65,38 @@ Three layers, never crossed:
 
 The orchestrator dispatches, validates, and routes. All forensic logic lives in the per-domain agents. 
 
+## Audit trail & provenance
+Chain-of-custody: the orchestrator hashes every file in evidence/new/ (SHA-256) before any agent touches it and re-verifies at the end of the run. A modified or missing source file flips the process exit code regardless of report success.
+
+Every forensic-tool invocation is routed through Chisel's exec_tool() and logged to evidence/audit/chisel_exec_<YYYYMMDD>.jsonl — one append-only record per call:
+
+Combined with the evidence_refs carried by every graph node and claim, this answers the judges' core audit question — "trace this finding back to the tool execution that produced it" — with one grep. The Chisel WHITELIST is the single source of truth for which tools an agent may run; adding a tool requires editing both the allowlist and the agent code that calls it.
+
+Some audit limitations exist for certain tools (Will update this section later...ran out of time)
+
 ---
+
+## Running a case
+# 1. Drop evidence into evidence/new/. The dispatcher routes by filename.
+cp memdump.raw     evidence/new/
+cp disk.E01        evidence/new/
+cp SYSTEM          evidence/new/
+cp Security.evtx   evidence/new/
+cp PREFETCH.pf     evidence/new/
+
+# MFT / USN journal use staged prefixes so the router can distinguish them:
+cp '$MFT'  'evidence/new/__mft__$MFT'
+cp '$J'    'evidence/new/__usnjrnl__$J'
+
+# 2. Run the orchestrator (Chisel must be running in Terminal A)
+python -u -m orchestrator.main
+
+# 3. Read the report
+ls reports/case_*.md
 
 ## Installation
 
 dfirskills is designed to run end-to-end on a stock **SANS SIFT Workstation** VM (Ubuntu 22.04, x86-64). SIFT ships with Volatility 3, EZ Tools, YARA, The Sleuth Kit, EWF tools, Plaso, and the .NET 6 runtime pre-installed at the paths dfirskills expects. On top of SIFT you install Cognee, this repo, the Python dependencies, and the YARA signature-base.
-
-If you already have a working SIFT VM, skip to step 2.
 
 ### 1. Get SIFT Workstation
 
@@ -80,8 +105,6 @@ If you already have a working SIFT VM, skip to step 2.
 3. Boot the VM. Default credentials: `sansforensics` / `forensics`. Open a terminal — your home is `/home/sansforensics`.
 4. Ensure protocol SIFT is installed
    `curl -fsSL https://raw.githubusercontent.com/teamdfir/protocol-sift/main/install.sh | bash`
-
-If any of these are missing, follow the [SIFT install guide](https://github.com/teamdfir/sift) before continuing. 
 
 ### 2. Clone dfirskills 
 ```bash
@@ -268,32 +291,7 @@ You should see the orchestrator import without error and print a `CASE_ID=…` l
 
 ---
 
-### Forensic-tool execution audit log
-
-Every forensic-tool invocation is routed through Chisel's `shell_exec` allowlist and logged to `evidence/audit/chisel_exec_<YYYYMMDD>.jsonl` (one record per invocation: timestamp, agent, tool, args, exit_code, stdout_bytes, stderr_summary, elapsed_ms).
-
-The audit log answers "what did this case actually run?" with one `cat`. The Chisel server's command allowlist is the source of truth for which tools agents are permitted to invoke (see `chisel-core/src/ops/shell.rs:WHITELIST`). Adding a new forensic tool requires both adding it to the allowlist AND adding the agent code that invokes it.
-
 ---
-
-## Running a case
-
-```bash
-# 1. Drop evidence into evidence/new/. The dispatcher routes by filename:
-memdump.raw   ->       evidence/new/
-disk.E01      ->       evidence/new/
-SYSTEM        ->       evidence/new/
-Security.evtx ->       evidence/new/
-PREFETCH.pf   ->       evidence/new/
-'$MFT'        ->       evidence/new/__mft__\$MFT
-'$J'          ->       evidence/new/__usnjrnl__\$J
-
-# 2. Run the orchestrator (Terminal B; Chisel must be running in Terminal A)
-python -u -m orchestrator.main
-
-# 3. Once the orchestration and agents are finished. Read the report under 
-~/dfirskills2/reports
-```
 
 ### Orchestrator CLI flags
 
@@ -306,7 +304,7 @@ python -u -m orchestrator.main
 
 ### Filename routing
 
-The dispatcher in `orchestrator/main.py:124-220` routes by filename heuristic:
+The dispatcher routes by filename heuristic:
 
 | Pattern | Agent |
 |---|---|
@@ -371,17 +369,6 @@ Each run produces two artifacts:
 
 ---
 
-## Architectural rules
-
-Four guarantees the pipeline enforces (via Chisel, the orchestrator, and the validator — not via agent self-discipline):
-
-- **Three-layer separation.** Agents never write to Cognee — they only emit Markdown claims. Orchestrator never runs forensic logic — it only dispatches, validates, and extracts.
-- **Entity extraction is deterministic Python only.** No LLM in the structured-data path.
-- **Every claim must self-validate** — every cited `evidence_ref` must exist on disk; every asserted entity property must match the source.
-
-The agents themselves load [`SKILLS.md`](./SKILLS.md) — a per-domain forensic playbook covering the tools each agent owns, the standard triage sweep, "when you see X, pivot to Y" signals, and the cross-source corroboration patterns that drive Tier A confidence. That's where the forensic *intelligence* of this pipeline lives.
-
----
 
 
 ## MIT License
