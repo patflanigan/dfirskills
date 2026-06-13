@@ -99,21 +99,16 @@ Some audit limitations exist for certain tools (Will update this section later..
 ---
 
 ## Running a case
-### 1. Drop evidence into evidence/new/. The dispatcher routes by filename.
-cp memdump.raw     evidence/new/
-cp disk.E01        evidence/new/
-cp SYSTEM          evidence/new/
-cp Security.evtx   evidence/new/
-cp PREFETCH.pf     evidence/new/
+ 1. Drop evidence into evidence/new/. The dispatcher routes by filename.
 
-### MFT / USN journal use staged prefixes so the router can distinguish them:
+ 2. MFT / USN journal use staged prefixes so the router can distinguish them:
 cp '$MFT'  'evidence/new/__mft__$MFT'
 cp '$J'    'evidence/new/__usnjrnl__$J'
 
-### 2. Run the orchestrator (Chisel must be running in Terminal A)
+2. Run the orchestrator (Chisel must be running in Terminal A)
 python -u -m orchestrator.main
 
-### 3. Read the report
+3. Read the report
 ls reports/case_*.md
 
 ## Installation
