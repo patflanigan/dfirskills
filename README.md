@@ -339,9 +339,6 @@ The dispatcher routes by filename heuristic:
 
 Every run produces html graph under `reports/` and a **typed knowledge graph** under `evidence/audit/<CASE_ID>/cognee_{system,data}` (one isolated graph per case, Kuzu-backed). The report is the executive view; the graph is the analyst's view — every node carries `evidence_refs` back to the raw artifact it was extracted from.
 
-```
-The graph is typed via `cognee_schema/schema.py` — Process, RegistryKey, Event, ProcessExecution, File, Service nodes with provenance-mandatory `evidence_refs`, connected by typed edges (`EXECUTED`, `WROTE_REGISTRY`, `LOADED_DLL`, etc., each carrying `confidence` and `derived_from`). The exact shape is the contract: agents emit claims, the orchestrator deterministically extracts entities, no LLM in the structured-data path.
----
 
 ## Project layout
 ```
