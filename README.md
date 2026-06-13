@@ -7,6 +7,7 @@ A three-layer DFIR system that ingests Windows memory dumps, disk images (E01), 
 Built for the **SANS FIND EVIL! / Protocol SIFT Contest**.
 
 Drop evidence files into evidence/new/ (memory dumps, .E01, hives, .evtx, .pf, $MFT, etc.). The pipeline processes autonomously, settles, and produces a report in reports/.
+
 ---
 
 ## Key Features & Contest Alignment
@@ -19,12 +20,6 @@ Drop evidence files into evidence/new/ (memory dumps, .E01, hives, .evtx, .pf, $
 - **Practitioner output** — Tiered Markdown report (CISO summary → Executive Tier A → Domain Tier B → Appendix) + interactive HTML graph + MITRE ATT&CK mapping.
 - **SIFT-native** — Runs on stock SANS SIFT Workstation using real tools (Volatility 3, EvtxECmd, MFTECmd, RECmd, pyscca, YARA, The Sleuth Kit, etc.).
 
-Core rules enforced by the system:
-
-Agents only emit claims. They never touch Cognee.
-Extraction is deterministic Python (no LLM in the structured path).
-Every claim must self-validate against real evidence on disk.
-All tool execution goes through Chisel’s allowlist + audit log.
 ---
 
 ## What makes this different
