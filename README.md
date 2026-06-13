@@ -152,6 +152,12 @@ The issue is on the SANS Workstation, running agents without root, calling 'vol'
 
 Prior to running the agents, make sure volatility has Symbols updated and is able to handle the memory dump. This is especially important for Windows 7 [win7-32-nromanoff-10.3.58.5.zip]
 
+I had to test volatility with root 
+```bash
+sudo vol -vvv -f win7-32-nromanoff-memory-raw.001 windows.info
+```
+testing as root with above command ensures **volatility downloads the required symbols to handle the memory artificat in scope**. Otherwise you will have poor memory foresnic results
+
 
 ### 4. YARA signature-base
 
