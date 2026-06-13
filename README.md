@@ -7,7 +7,6 @@ A three-layer DFIR system that ingests Windows memory dumps, disk images (E01), 
 Built for the **SANS FIND EVIL! / Protocol SIFT Contest**.
 
 Drop evidence files into evidence/new/ (memory dumps, .E01, hives, .evtx, .pf, $MFT, etc.). The pipeline processes autonomously, settles, and produces a report in reports/.
-See detailed installation and running instructions below.
 ---
 
 ## Key Features & Contest Alignment
@@ -27,11 +26,6 @@ Extraction is deterministic Python (no LLM in the structured path).
 Every claim must self-validate against real evidence on disk.
 All tool execution goes through Chisel’s allowlist + audit log.
 ---
-
-**An autonomous, evidence-integrity-first DFIR pipeline for the SANS Find Evil! hackathon.
-**
----
-dfirskills ingests Windows memory dumps, disk images (E01), registry hives, event logs, prefetch, and MFT/USN data; runs deterministic per-domain forensic agents; self-corrects every finding against the evidence and the case graph before it is allowed to stand; and emits a typed Cognee knowledge graph where every node traces back to the exact tool execution that produced it.
 
 ## What makes this different
 **No LLM in the structured-data path.** Forensic logic lives in deterministic Python agents. The graph is written only by a deterministic extractor. The one LLM component (the optional forensic analyst) is downstream of the deterministic baseline and is gated by the same validator everything else passes through — it cannot introduce a finding that contradicts the graph.
