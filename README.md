@@ -137,7 +137,7 @@ cd volatility3/
 pip install -e ".[dev]" --break-system-packages
 
 wget https://downloads.volatilityfoundation.org/volatility3/symbols/windows.zip -O /tmp/windows.zip
-unzip /tmp/windows.zip -d ~/.volatility3/symbols/
+unzip /tmp/windows.zip -d ~/volatility3/volatility3/symbols/
 
 verify volatility works with
 vol -f image.dmp windows.pslist
