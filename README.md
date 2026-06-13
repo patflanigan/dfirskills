@@ -143,6 +143,16 @@ pip install -r requirements.txt --break-system-packages
 
 This installs **[Cognee](https://github.com/topoteretes/cognee)** — the typed knowledge-graph backend the orchestrator extracts entities into — plus `python-dotenv`, `PyYAML`, `requests`, and the optional `anthropic` SDK (only used if you set `ANTHROPIC_API_KEY` later). Cognee runs entirely on-disk under `evidence/audit/<CASE_ID>/cognee_{system,data}` — no external service or API key required.
 
+### 3. Issues with Volatility
+Volatility tries to auto-download symbols. Run any plugin that needs kernel symbols on your memory image. Volatility will try to fetch what it needs from Microsoft:
+
+python3 vol.py -f /path/to/your.dump windows.info
+
+The issue is on the SANS Workstation, running agents without root, calling 'vol' does not allow Volatility to write into /opt/volatility3/lib/python3.12/site-packages/volatility3/symbols'
+
+Prior to running the agents, make sure volatility has Symbols updated and is able to handle the memory dump. This is especially important for Windows 7 [win7-32-nromanoff-10.3.58.5.zip]
+
+
 ### 4. YARA signature-base
 
 The YARA rule base is vendored separately (Detection Rule License 1.1 — kept out of this repo).
