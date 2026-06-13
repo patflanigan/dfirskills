@@ -135,7 +135,7 @@ cd dfirskills
 ```bash
 cd ~/dfirskills
 sudo apt install python3.12-venv
-python3 -m venv .venv
+python3 -m venv --system-site-packages .venv
 source .venv/bin/activate
 pip install -r requirements.txt --break-system-packages
 ```
