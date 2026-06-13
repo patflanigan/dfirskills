@@ -96,7 +96,7 @@ flowchart TD
     
     Correlation --> Report[report_agent]
     Report --> ReportOut[reports/case_*.md<br/>CISO summary + Tiered findings<br/>+ interactive HTML graph]
-
+```
 The orchestrator dispatches, validates, and routes. All forensic logic lives in the per-domain agents. 
 
 ## Audit trail & provenance
