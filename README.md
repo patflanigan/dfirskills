@@ -130,7 +130,7 @@ cd dfirskills
 
 ```
 ### 3. Issues with Volatility3
-
+```bash
 cd ~ 
 git clone https://github.com/volatilityfoundation/volatility3.git
 cd volatility3/
@@ -141,7 +141,7 @@ unzip /tmp/windows.zip -d ~/.volatility3/symbols/
 
 verify volatility works with
 vol -f image.dmp windows.pslist
-
+```
 I had issues with missing volatility3 for handling raw memory files. this needs to be reviewed. for now i have installed it
 
 ### 4. Python environment + dependencies
