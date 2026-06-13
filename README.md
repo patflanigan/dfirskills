@@ -64,7 +64,6 @@ Three layers, never crossed:
 | **Claims** | Markdown files with YAML frontmatter | domain agents |
 | **Entities** | Cognee graph (typed nodes + edges, every one carrying `evidence_refs`) | orchestrator only — agents never touch Cognee |
 ```
-## Architecture
 
 ```mermaid
 flowchart TD
