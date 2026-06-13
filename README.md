@@ -16,7 +16,8 @@ dfirskills ingests Windows memory dumps, disk images (E01), registry hives, even
 **Custom MCP Server (Chisel) + deterministic multi-agent pipeline.** The security property is architectural: Chisel enforces a kernel-confined evidence root plus a command allowlist over an MCP shell_exec interface. 
 
 1. The forensic agents are deterministic Python — the LLM is not driving the shell.
-2. A single optional LLM agent (forensic analyst) runs last and is subordinate to the deterministic baseline. 
+2. The orchestrator only dispatches, validates, and routes.
+3. A single optional LLM agent (forensic analyst) runs last and is subordinate to the deterministic baseline. 
 
 Three layers, never crossed:
 
