@@ -64,40 +64,35 @@ Three layers, never crossed:
 | **Claims** | Markdown files with YAML frontmatter | domain agents |
 | **Entities** | Cognee graph (typed nodes + edges, every one carrying `evidence_refs`) | orchestrator only — agents never touch Cognee |
 ```
-  ┌─────────────────┐
- evidence/new/   ────►    │   dispatcher    │   (orchestrator/main.py)
- (you drop here)          └────────┬────────┘
-                                   │ filename heuristic
-                ┌──────────┬───────┼───────┬──────────┬──────────┐
-                ▼          ▼       ▼        ▼          ▼          ▼
-            memory_agent  disk  registry  evtx    prefetch   mft_agent
-                │          │      │         │        │           │
-                └──────────┴───── claims/todo/ ◄─────┴───────────┘
-                                   │
-                                   ▼
-                          ┌─────────────────┐
-                          │   validator     │   self-correction loop
-                          │  evidence refs  │   (rejects contradictions
-                          │  + graph spot-  │    & evidence-less claims)
-                          │  checks + body  │
-                          └────────┬────────┘
-                                   │
-                          ┌────────┴────────┐
-                          ▼                 ▼
-                    claims/done/      claims/rejected/
-                          │
-                          ▼
-                   extractor ──► Cognee graph  (deterministic, no LLM)
-                          │
-                          ▼
-                   correlation_agent  (cross-domain Tier A/B/C)
-                          │
-       plaso super-timeline ──► (lateral-movement pass)
-                          │
-       forensic_analyst (optional LLM deep-dive) ──┐ emits more claims,
-                          │                        │ re-validated identically
-                          ▼
-                    report_agent  ──►  reports/case_*.md + case_graph_*.html
+flowchart TD
+    Evidence[evidence/new/<br/>Drop files here] --> Dispatcher[Orchestrator Dispatcher<br/>filename heuristic routing]
+    
+    Dispatcher --> Memory[memory_agent]
+    Dispatcher --> Disk[disk_image_agent]
+    Dispatcher --> Registry[registry_agent]
+    Dispatcher --> Evtx[evtx_agent]
+    Dispatcher --> Prefetch[prefetch_agent]
+    Dispatcher --> MFT[mft_agent]
+    
+    Memory & Disk & Registry & Evtx & Prefetch & MFT --> Claims[claims/todo/]
+    
+    Claims --> Validator{Validator<br/>Self-correction loop<br/>evidence_refs + property checks}
+    Validator -->|Valid| Done[claims/done/]
+    Validator -->|Invalid / needs work| Rejected[claims/rejected/]
+    
+    Done --> Extractor[Extractor<br/>Deterministic claim → typed entity]
+    Extractor --> Cognee[(Typed Cognee Graph<br/>every node + edge has<br/>evidence_refs + confidence + derived_from)]
+    
+    Cognee --> Correlation[correlation_agent<br/>Cross-domain pattern matching<br/>Tier A/B/C]
+    
+    Correlation --> Analyst[Optional AI Analyst<br/>LLM deep-dive pass<br/>emits claims]
+    Analyst -->|AI Analyst claims go through validator| Validator
+    
+    Validator --> Done
+    Done --> Extractor
+    
+    Correlation --> Report[report_agent]
+    Report --> ReportOut[reports/case_*.md<br/>CISO summary + Tiered findings<br/>+ interactive HTML graph]
 ```
 
 The orchestrator dispatches, validates, and routes. All forensic logic lives in the per-domain agents. 
