@@ -63,7 +63,6 @@ Three layers, never crossed:
 | **Evidence** | Local directory — immutable raw files | external (you drop files in) |
 | **Claims** | Markdown files with YAML frontmatter | domain agents |
 | **Entities** | Cognee graph (typed nodes + edges, every one carrying `evidence_refs`) | orchestrator only — agents never touch Cognee |
-```
 
 ```mermaid
 flowchart TD
