@@ -101,11 +101,12 @@ Some audit limitations exist for certain tools (Will update this section later..
 ## Running a case
  1. Drop evidence into evidence/new/. The dispatcher routes by filename.
 
- 2. MFT / USN journal use staged prefixes so the router can distinguish them:
-cp '$MFT'  'evidence/new/__mft__$MFT'
-cp '$J'    'evidence/new/__usnjrnl__$J'
-
-2. Run the orchestrator (Chisel must be running in Terminal A)
+ 2. Chisel must be running in Terminal A
+    
+```bash
+./chisel --root "$PWD/" --secret "$(grep ^CHISEL_SECRET .env | cut -d= -f2)"
+```
+2. Run the orchestrator in another Terminal (Chisel must be running in Terminal A)
 
 ```bash
 python -u -m orchestrator.main
